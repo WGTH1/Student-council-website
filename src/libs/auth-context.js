@@ -16,17 +16,11 @@ export function AuthProvider({ children }) {
   const TARGET_GUILD_ID = '1503008352383533066'; 
 
   useEffect(() => {
-    let currentUserId = null;
-
-    // 1. ฟังการเปลี่ยนแปลงการ Login/Logout (ตัวนี้จะทำงานตอนเริ่มโหลดหน้าเว็บด้วย)
+    // 1. ฟังการเปลี่ยนแปลงการ Login/Logout
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth Event:', event);
+      console.log('Auth Event:', event, session?.user?.id);
       
-      const nextUserId = session?.user?.id;
-      
-      // ถ้าไม่มี session ให้ reset ค่าเลยไม่ต้องโหลดต่อ
       if (!session) {
-        currentUserId = null;
         setSession(null);
         setUser(null);
         setIsAdmin(false);
@@ -34,13 +28,9 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // ป้องกันการโหลดซ้ำถ้า User เดิม และไม่ใช่การ Login ใหม่ (SIGNED_IN)
-      if (nextUserId === currentUserId && event !== 'SIGNED_IN') {
-        return;
-      }
-
-      currentUserId = nextUserId;
-      handleAuthChange(session, event === 'SIGNED_IN');
+      // สำหรับ Mobile: บางครั้ง event อาจไม่ใช่ SIGNED_IN แต่เรามี session แล้ว
+      // ให้ลองเช็คสิทธิ์เสมอถ้ามีการเปลี่ยนแปลงสถานะ
+      handleAuthChange(session, event === 'SIGNED_IN' || event === 'INITIAL_SESSION');
     });
 
     return () => subscription.unsubscribe();
@@ -51,6 +41,7 @@ export function AuthProvider({ children }) {
     setUser(newSession?.user ?? null);
 
     if (newSession?.user) {
+      // ดึงโปรไฟล์และเช็คสิทธิ์
       await syncAndFetchProfile(newSession, shouldCheckDiscord);
     } else {
       setIsAdmin(false);
@@ -61,6 +52,7 @@ export function AuthProvider({ children }) {
   async function syncAndFetchProfile(session, shouldCheckDiscord = false) {
     try {
       const user = session.user;
+      console.log('Syncing profile for:', user.email);
 
       // 1. ดึงโปรไฟล์ปัจจุบันจาก DB
       let { data: profile, error: fetchError } = await supabase
@@ -73,33 +65,58 @@ export function AuthProvider({ children }) {
         console.error('Error fetching profile:', fetchError);
       }
 
-      // 2. ตรวจสอบกับ Discord เฉพาะเมื่อจำเป็น (ยังไม่เป็น Admin ใน DB และเป็นช่วง Login ใหม่)
-      if (!profile?.is_admin && shouldCheckDiscord && session.provider_token) {
-        console.log('New Sign-in detected. Verifying server membership...');
-        
-        const response = await fetch('https://discord.com/api/users/@me/guilds', {
-          headers: { Authorization: `Bearer ${session.provider_token}` }
-        });
+      // 2. ตรวจสอบกับ Discord:
+      if (!profile?.is_admin) {
+        if (session.provider_token) {
+          console.log('Verifying server membership via Discord API...');
+          
+          const response = await fetch('https://discord.com/api/users/@me/guilds', {
+            headers: { Authorization: `Bearer ${session.provider_token}` }
+          });
 
-        if (response.ok) {
-          const guilds = await response.json();
-          const isInServer = guilds.some(g => g.id === TARGET_GUILD_ID);
+          if (response.ok) {
+            const guilds = await response.json();
+            const isInServer = guilds.some(g => g.id === TARGET_GUILD_ID);
 
-          if (isInServer) {
-            console.log('User is in target server! Granting permanent admin access...');
-            const { data: updatedProfile } = await supabase
-              .from('profiles')
-              .upsert({ 
-                id: user.id, 
-                is_admin: true,
-                full_name: user.user_metadata.full_name,
-                avatar_url: user.user_metadata.avatar_url
-              })
-              .select()
-              .single();
-            
-            profile = updatedProfile;
+            if (isInServer) {
+              console.log('User is in target server! Granting admin access...');
+              
+              // แก้ไข: ดึงชื่อจากหลายแหล่ง เพราะ iPhone/Discord Metadata อาจส่งมาต่างกัน
+              const displayName = 
+                user.user_metadata?.full_name || 
+                user.user_metadata?.global_name || 
+                user.user_metadata?.name || 
+                user.user_metadata?.custom_claims?.global_name ||
+                'Discord User';
+
+              const { data: updatedProfile, error: upsertError } = await supabase
+                .from('profiles')
+                .upsert({ 
+                  id: user.id, 
+                  is_admin: true,
+                  full_name: displayName,
+                  avatar_url: user.user_metadata?.avatar_url || ''
+                })
+                .select()
+                .single();
+              
+              if (upsertError) {
+                console.error('Upsert Error:', upsertError);
+              } else {
+                profile = updatedProfile;
+              }
+            } else {
+              console.log('User is NOT in the target Discord server.');
+            }
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Discord API Error:', response.status, errorData);
           }
+        } else if (shouldCheckDiscord) {
+          // ถ้าไม่มี provider_token ทั้งที่ควรจะมี (เช่น เพิ่งกด Login)
+          // เป็นไปได้ว่าติดเรื่อง Privacy ใน iPhone
+          console.warn('Missing provider_token. This often happens on iOS In-App Browsers.');
+          // ไม่แสดง Alert พร่ำเพรื่อ แต่ Log ไว้เผื่อตรวจสอบ
         }
       }
 
