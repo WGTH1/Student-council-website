@@ -96,6 +96,9 @@ export default function Home() {
                 <span>🛡️</span> Control Panel
               </Link>
             )}
+            <Link href="/user" className="px-10 py-4 bg-white text-black font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase text-sm flex items-center gap-2 group">
+              <span>👥</span> Personnel Directory
+            </Link>
             <Link href="/suggestions" className="px-10 py-4 bg-zinc-900 border border-zinc-800 text-white font-black rounded-2xl hover:border-theme hover:text-theme transition-all shadow-xl uppercase text-sm flex items-center gap-2 group">
               <span>📮</span> Digital Box 
               <span className="text-zinc-600 group-hover:text-theme transition-colors ml-1">→</span>
