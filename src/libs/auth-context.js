@@ -16,8 +16,13 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // 1. ตรวจสอบ Session เริ่มต้น
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      handleAuthChange(session);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+      handleAuthChange(session, false);
     });
 
     // 2. ฟังการเปลี่ยนแปลงการ Login/Logout
@@ -29,55 +34,66 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function handleAuthChange(session, isNewSignIn = false) {
+  async function handleAuthChange(session, shouldCheckDiscord = false) {
     setSession(session);
     setUser(session?.user ?? null);
 
     if (session?.user) {
-      // ดึงข้อมูล Admin จากฐานข้อมูล (Profiles Table)
-      await syncAndFetchProfile(session, isNewSignIn);
+      await syncAndFetchProfile(session, shouldCheckDiscord);
     } else {
       setIsAdmin(false);
       setLoading(false);
     }
   }
 
-  async function syncAndFetchProfile(session, checkDiscord = false) {
+  async function syncAndFetchProfile(session, shouldCheckDiscord = false) {
     try {
       const user = session.user;
-      console.log('Checking profile for user:', user.email);
 
-      // 1. ดึงโปรไฟล์ปัจจุบันจาก DB ก่อน
+      // 1. ดึงโปรไฟล์ปัจจุบันจาก DB
       let { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (fetchError) {
-        console.warn('Profile not found in DB, might need sync or creation:', fetchError.message);
-      } else {
-        console.log('Profile found! is_admin:', profile?.is_admin);
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', fetchError);
       }
 
-      // 2. ถ้าเป็น SIGNED_IN ใหม่ หรือยังไม่เป็น Admin ให้ลองเช็ค Discord ดูอีกรอบ
-      if ((checkDiscord || !profile?.is_admin) && session.provider_token) {
-        console.log('Attempting Discord verification...');
-...
+      // 2. ตรวจสอบกับ Discord เฉพาะเมื่อจำเป็น (ยังไม่เป็น Admin ใน DB และเป็นช่วง Login ใหม่)
+      if (!profile?.is_admin && shouldCheckDiscord && session.provider_token) {
+        console.log('New Sign-in detected. Verifying server membership...');
+        
+        const response = await fetch('https://discord.com/api/users/@me/guilds', {
+          headers: { Authorization: `Bearer ${session.provider_token}` }
+        });
+
+        if (response.ok) {
+          const guilds = await response.json();
+          const isInServer = guilds.some(g => g.id === TARGET_GUILD_ID);
+
+          if (isInServer) {
+            console.log('User is in target server! Granting permanent admin access...');
+            const { data: updatedProfile } = await supabase
+              .from('profiles')
+              .upsert({ 
+                id: user.id, 
+                is_admin: true,
+                full_name: user.user_metadata.full_name,
+                avatar_url: user.user_metadata.avatar_url
+              })
+              .select()
+              .single();
+            
             profile = updatedProfile;
-            console.log('Admin status updated via Discord!');
-          } else {
-            console.log('User is not in the target Discord server.');
           }
-        } else {
-           console.error('Discord API call failed:', response.status);
         }
       }
 
       setIsAdmin(profile?.is_admin || false);
-      console.log('Final Admin Status Set:', profile?.is_admin || false);
     } catch (err) {
-      console.error('Profile Sync Error:', err);
+      console.error('Auth sync error:', err);
     } finally {
       setLoading(false);
     }
@@ -87,7 +103,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {
-        scopes: 'identify guilds email', // ต้องมี guilds เพื่อเช็คเซิร์ฟเวอร์
+        scopes: 'identify guilds email',
         redirectTo: window.location.origin
       }
     });

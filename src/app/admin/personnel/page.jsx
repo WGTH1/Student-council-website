@@ -22,7 +22,7 @@ const departments = [
 ];
 
 export default function AdminPersonnelPage() {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, loading: authLoading, logout } = useAuth();
   const { settings } = useTheme();
   const router = useRouter();
   
@@ -161,6 +161,12 @@ export default function AdminPersonnelPage() {
           <Link href="/admin" className="text-zinc-500 hover:text-white transition-colors">← Back</Link>
           <h1 className="font-black italic text-xl tracking-tighter uppercase">Personnel Manager</h1>
         </div>
+        <button 
+          onClick={logout}
+          className="text-zinc-500 hover:text-red-500 transition-colors text-[10px] font-black uppercase tracking-widest border border-zinc-800 hover:border-red-500/50 px-4 py-1 rounded-full bg-zinc-900/50"
+        >
+          Logout
+        </button>
       </nav>
 
       <main className="max-w-6xl mx-auto p-6 py-12">

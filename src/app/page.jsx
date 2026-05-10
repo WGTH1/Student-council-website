@@ -25,7 +25,7 @@ export default function Home() {
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const { settings, loading: themeLoading } = useTheme();
-  const { user, isAdmin, loginWithDiscord, loading: authLoading } = useAuth();
+  const { user, isAdmin, loginWithDiscord, logout, loading: authLoading } = useAuth();
 
   useEffect(() => {
     async function fetchNews() {
@@ -46,15 +46,26 @@ export default function Home() {
       {/* 1. HERO SECTION */}
       <section className="relative h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden">
         {/* Profile / Login Status */}
-        <div className="absolute top-10 right-10 z-20">
+        <div className="absolute top-10 right-10 z-20 flex items-center gap-3">
           {user ? (
-            <div className="flex items-center gap-4 bg-zinc-900/50 backdrop-blur-xl p-2 pr-6 rounded-full border border-zinc-800">
-              <img src={user.user_metadata.avatar_url} className="w-10 h-10 rounded-full border border-theme" />
-              <div>
-                <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest leading-none">Logged in as</p>
-                <p className="text-xs font-bold text-white uppercase">{user.user_metadata.full_name}</p>
+            <>
+              <div className="flex items-center gap-4 bg-zinc-900/50 backdrop-blur-xl p-2 pr-6 rounded-full border border-zinc-800">
+                <img src={user.user_metadata.avatar_url} className="w-10 h-10 rounded-full border border-theme" />
+                <div>
+                  <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest leading-none">Logged in as</p>
+                  <p className="text-xs font-bold text-white uppercase">{user.user_metadata.full_name}</p>
+                </div>
               </div>
-            </div>
+              <button 
+                onClick={logout}
+                className="w-10 h-10 flex items-center justify-center bg-zinc-900/50 border border-zinc-800 rounded-full text-zinc-500 hover:text-red-500 transition-all backdrop-blur-xl group"
+                title="Logout"
+              >
+                <svg className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </>
           ) : (
             <button 
               onClick={loginWithDiscord}

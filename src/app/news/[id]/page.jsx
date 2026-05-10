@@ -4,11 +4,13 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/libs/supabase';
 import { useTheme } from '@/components/ThemeProvider';
+import { useAuth } from '@/libs/auth-context';
 
 export default function NewsDetailPage({ params }) {
   const resolvedParams = use(params);
   const { id } = resolvedParams;
   const { settings } = useTheme();
+  const { user, logout } = useAuth();
   
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,9 +54,22 @@ export default function NewsDetailPage({ params }) {
           <img src={settings.logo_url} alt="Logo" className="w-10 h-10 object-contain" />
           <span className="font-black italic text-xl tracking-tighter group-hover:text-theme transition-colors uppercase">{settings.party_name}</span>
         </Link>
-        <Link href="/news" className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-full text-xs font-black uppercase tracking-widest hover:text-theme transition-all">
-          Back to News
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/news" className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-full text-xs font-black uppercase tracking-widest hover:text-theme transition-all">
+            Back to News
+          </Link>
+          {user && (
+            <button 
+              onClick={logout}
+              className="w-10 h-10 flex items-center justify-center bg-zinc-900/50 border border-zinc-800 rounded-full text-zinc-500 hover:text-red-500 transition-all backdrop-blur-xl group"
+              title="Logout"
+            >
+              <svg className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          )}
+        </div>
       </nav>
 
       <main className="max-w-4xl mx-auto p-6 py-20">

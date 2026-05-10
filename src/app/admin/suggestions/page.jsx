@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 export default function AdminSuggestionsPage() {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, loading: authLoading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -77,8 +77,16 @@ export default function AdminSuggestionsPage() {
           <div className="h-4 w-px bg-zinc-800"></div>
           <h1 className="font-black italic text-xl tracking-tighter uppercase">Digital Box Manager</h1>
         </div>
-        <div className="px-4 py-1 bg-pink-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(219,39,119,0.4)]">
-          Admin View
+        <div className="flex items-center gap-6">
+          <div className="px-4 py-1 bg-pink-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(219,39,119,0.4)]">
+            Admin View
+          </div>
+          <button 
+            onClick={logout}
+            className="text-zinc-500 hover:text-red-500 transition-colors text-[10px] font-black uppercase tracking-widest border border-zinc-800 hover:border-red-500/50 px-4 py-1 rounded-full bg-zinc-900/50"
+          >
+            Logout
+          </button>
         </div>
       </nav>
 

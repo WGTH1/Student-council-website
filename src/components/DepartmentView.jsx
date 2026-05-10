@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/libs/supabase';
 import { useTheme } from '@/components/ThemeProvider';
+import { useAuth } from '@/libs/auth-context';
 
 const departmentMap = {
   advisors: { name: 'คณะที่ปรึกษา', icon: '👨‍🏫' },
@@ -23,6 +24,7 @@ const departmentMap = {
 export default function DepartmentView({ id, isAdmin }) {
   const dept = departmentMap[id];
   const { settings } = useTheme();
+  const { logout } = useAuth();
   const [members, setMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -184,8 +186,18 @@ export default function DepartmentView({ id, isAdmin }) {
           <img src={settings.logo_url} alt="Logo" className="w-10 h-10 object-contain" />
           <span className="font-black italic text-xl tracking-tighter group-hover:text-theme transition-colors uppercase">{settings.party_name}</span>
         </Link>
-        <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isAdmin ? 'bg-pink-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
-          {isAdmin ? 'ADMIN CONTROL' : 'VIEW ONLY MODE'}
+        <div className="flex items-center gap-6">
+          <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isAdmin ? 'bg-pink-600 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+            {isAdmin ? 'ADMIN CONTROL' : 'VIEW ONLY MODE'}
+          </div>
+          {user && (
+            <button 
+              onClick={logout}
+              className="text-zinc-500 hover:text-red-500 transition-colors text-[10px] font-black uppercase tracking-widest border border-zinc-800 hover:border-red-500/50 px-4 py-1 rounded-full bg-zinc-900/50"
+            >
+              Logout
+            </button>
+          )}
         </div>
       </nav>
 
