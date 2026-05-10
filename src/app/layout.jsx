@@ -4,6 +4,9 @@ import { supabase } from '@/libs/supabase';
 import ScrollProgress from '@/components/ScrollProgress';
 import '../index.css';
 
+export const revalidate = 0; // Disable cache for this layout to ensure fresh settings
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'FUTURE PLUS | Student Council',
   description: 'ระบบจัดการข้อมูลสมาชิกพรรค Future Plus',

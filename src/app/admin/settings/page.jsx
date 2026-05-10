@@ -119,6 +119,7 @@ export default function AdminSettings() {
         .eq('id', 1);
 
       if (error) throw error;
+      router.refresh();
       alert('บันทึกการตั้งค่าเรียบร้อยแล้ว!');
     } catch (err) {
       alert('Error: ' + err.message);

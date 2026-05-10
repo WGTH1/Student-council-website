@@ -13,6 +13,13 @@ export function ThemeProvider({ children, initialSettings }) {
   });
   const [loading, setLoading] = useState(!initialSettings);
 
+  // Sync state with server-provided settings when they change
+  useEffect(() => {
+    if (initialSettings) {
+      setSettings(initialSettings);
+    }
+  }, [initialSettings]);
+
   useEffect(() => {
     // If we already have initialSettings from Server Component, don't fetch again on client
     // This reduces redundant database requests on every page load

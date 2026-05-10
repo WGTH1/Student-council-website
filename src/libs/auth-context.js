@@ -65,6 +65,9 @@ export function AuthProvider({ children }) {
         console.error('Error fetching profile:', fetchError);
       }
 
+      console.log('Profile from DB:', profile);
+      console.log('Is Admin:', profile?.is_admin || false);
+
       // 2. ตรวจสอบกับ Discord:
       if (!profile?.is_admin) {
         if (session.provider_token) {
