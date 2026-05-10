@@ -70,9 +70,9 @@ export default function AdminPage() {
           <div className="flex flex-wrap gap-4">
             <Link 
               href="/admin/settings" 
-              className="px-8 py-4 bg-zinc-900 border border-zinc-800 text-white font-black rounded-2xl hover:border-blue-500 hover:text-blue-500 transition-all shadow-xl uppercase text-xs tracking-widest flex items-center gap-3"
+              className="px-8 py-4 bg-zinc-900 border border-zinc-800 text-white font-black rounded-2xl hover:border-theme hover:text-theme transition-all shadow-xl uppercase text-xs tracking-widest flex items-center gap-3"
             >
-              <span>⚙️</span> Site Settings
+              <span>⚙️</span> Site Settings & Policies
             </Link>
             <Link 
               href="/admin/suggestions" 

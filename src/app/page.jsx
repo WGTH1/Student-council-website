@@ -24,6 +24,8 @@ import { useTheme } from '../components/ThemeProvider';
 export default function Home() {
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
+  const [policies, setPolicies] = useState([]);
+  const [policiesLoading, setPoliciesLoading] = useState(true);
   const { settings, loading: themeLoading } = useTheme();
   const { user, isAdmin, loginWithDiscord, loginWithEmail, logout, loading: authLoading } = useAuth();
 
@@ -35,7 +37,8 @@ export default function Home() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
-    async function fetchNews() {
+    async function fetchData() {
+      // Fetch News
       setNewsLoading(true);
       const { data: newsData } = await supabase
         .from('news')
@@ -44,8 +47,22 @@ export default function Home() {
         .limit(3);
       if (newsData) setNews(newsData);
       setNewsLoading(false);
+
+      // Fetch Policies
+      setPoliciesLoading(true);
+      try {
+        const { data: policyData } = await supabase
+          .from('policies')
+          .select('*')
+          .order('id', { ascending: true });
+        if (policyData) setPolicies(policyData);
+      } catch (err) {
+        console.error('Error fetching policies:', err);
+      } finally {
+        setPoliciesLoading(false);
+      }
     }
-    fetchNews();
+    fetchData();
   }, []);
 
   const handleEmailLogin = async (e) => {
@@ -265,6 +282,42 @@ export default function Home() {
                     <h3 className="text-xl font-black uppercase italic text-white line-clamp-1 group-hover:text-theme transition-colors">{item.title}</h3>
                   </div>
                 </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* NEW: POLICIES SECTION */}
+      <section id="policies" className="py-32 border-t border-zinc-900 bg-black">
+        <div className="max-w-7xl mx-auto px-6">
+          <header className="mb-20 text-center">
+            <h2 className="text-5xl font-black uppercase italic tracking-tighter mb-4">Our Policies</h2>
+            <p className="text-theme font-bold tracking-[0.3em] uppercase text-xs italic">นโยบายหลักเพื่อการพัฒนาที่ยั่งยืน</p>
+          </header>
+
+          {policiesLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="w-10 h-10 border-2 border-theme border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : policies.length === 0 ? (
+            <div className="text-center py-20 bg-zinc-900/10 rounded-[4rem] border border-dashed border-zinc-800">
+              <p className="text-zinc-600 font-black uppercase tracking-widest text-xs">No policies published yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {policies.map((policy) => (
+                <div key={policy.id} className="group p-10 bg-zinc-900/20 border border-zinc-800 rounded-[3rem] hover:bg-zinc-900/40 hover:border-theme/30 transition-all">
+                  <div className="text-5xl mb-8 transform group-hover:scale-110 transition-transform duration-500">
+                    {policy.icon}
+                  </div>
+                  <h3 className="text-2xl font-black text-white mb-4 group-hover:text-theme transition-colors uppercase italic tracking-tight">
+                    {policy.title}
+                  </h3>
+                  <p className="text-zinc-500 text-sm leading-relaxed font-medium">
+                    {policy.description}
+                  </p>
+                </div>
               ))}
             </div>
           )}
