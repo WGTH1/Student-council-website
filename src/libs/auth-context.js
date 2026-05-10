@@ -45,6 +45,7 @@ export function AuthProvider({ children }) {
   async function syncAndFetchProfile(session, checkDiscord = false) {
     try {
       const user = session.user;
+      console.log('Checking profile for user:', user.email);
 
       // 1. ดึงโปรไฟล์ปัจจุบันจาก DB ก่อน
       let { data: profile, error: fetchError } = await supabase
@@ -53,38 +54,28 @@ export function AuthProvider({ children }) {
         .eq('id', user.id)
         .single();
 
+      if (fetchError) {
+        console.warn('Profile not found in DB, might need sync or creation:', fetchError.message);
+      } else {
+        console.log('Profile found! is_admin:', profile?.is_admin);
+      }
+
       // 2. ถ้าเป็น SIGNED_IN ใหม่ หรือยังไม่เป็น Admin ให้ลองเช็ค Discord ดูอีกรอบ
       if ((checkDiscord || !profile?.is_admin) && session.provider_token) {
-        console.log('Verifying Discord membership for auto-admin...');
-        
-        const response = await fetch('https://discord.com/api/users/@me/guilds', {
-          headers: { Authorization: `Bearer ${session.provider_token}` }
-        });
-
-        if (response.ok) {
-          const guilds = await response.json();
-          const isInServer = guilds.some(g => g.id === TARGET_GUILD_ID);
-
-          if (isInServer) {
-            console.log('Server Member Confirmed! Updating Admin Status...');
-            // อัปเดตลงฐานข้อมูลให้ถาวร
-            const { data: updatedProfile } = await supabase
-              .from('profiles')
-              .upsert({ 
-                id: user.id, 
-                is_admin: true,
-                full_name: user.user_metadata.full_name,
-                avatar_url: user.user_metadata.avatar_url
-              })
-              .select()
-              .single();
-            
+        console.log('Attempting Discord verification...');
+...
             profile = updatedProfile;
+            console.log('Admin status updated via Discord!');
+          } else {
+            console.log('User is not in the target Discord server.');
           }
+        } else {
+           console.error('Discord API call failed:', response.status);
         }
       }
 
       setIsAdmin(profile?.is_admin || false);
+      console.log('Final Admin Status Set:', profile?.is_admin || false);
     } catch (err) {
       console.error('Profile Sync Error:', err);
     } finally {
