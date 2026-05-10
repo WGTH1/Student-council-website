@@ -24,7 +24,7 @@ const departmentMap = {
 export default function DepartmentView({ id, isAdmin }) {
   const dept = departmentMap[id];
   const { settings } = useTheme();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [members, setMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
   const [loading, setLoading] = useState(true);

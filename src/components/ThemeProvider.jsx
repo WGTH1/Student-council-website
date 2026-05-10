@@ -14,7 +14,13 @@ export function ThemeProvider({ children, initialSettings }) {
   const [loading, setLoading] = useState(!initialSettings);
 
   useEffect(() => {
-    // Only fetch if initialSettings weren't provided or we need to sync
+    // If we already have initialSettings from Server Component, don't fetch again on client
+    // This reduces redundant database requests on every page load
+    if (initialSettings) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchSettings() {
       try {
         const { data } = await supabase
@@ -35,10 +41,9 @@ export function ThemeProvider({ children, initialSettings }) {
       }
     }
     
-    // We still fetch on client to ensure we have the latest if the admin just changed it
-    // and to handle any hydration mismatches gracefully
+    // Fallback fetch only if initialSettings missing
     fetchSettings();
-  }, []);
+  }, [initialSettings]);
 
   return (
     <ThemeContext.Provider value={{ settings, loading }}>

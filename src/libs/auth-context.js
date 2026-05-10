@@ -10,36 +10,48 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const currentUserRef = typeof window !== 'undefined' ? { current: null } : null; // Simple ref-like tracking
 
   // ⚠️ แก้ไข ID เซิร์ฟเวอร์ของคุณที่นี่ (Discord Server ID / Guild ID)
   const TARGET_GUILD_ID = '1503008352383533066'; 
 
   useEffect(() => {
-    // 1. ตรวจสอบ Session เริ่มต้น
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        supabase.auth.signOut();
+    let currentUserId = null;
+
+    // 1. ฟังการเปลี่ยนแปลงการ Login/Logout (ตัวนี้จะทำงานตอนเริ่มโหลดหน้าเว็บด้วย)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth Event:', event);
+      
+      const nextUserId = session?.user?.id;
+      
+      // ถ้าไม่มี session ให้ reset ค่าเลยไม่ต้องโหลดต่อ
+      if (!session) {
+        currentUserId = null;
+        setSession(null);
+        setUser(null);
+        setIsAdmin(false);
         setLoading(false);
         return;
       }
-      handleAuthChange(session, false);
-    });
 
-    // 2. ฟังการเปลี่ยนแปลงการ Login/Logout
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth Event:', event);
+      // ป้องกันการโหลดซ้ำถ้า User เดิม และไม่ใช่การ Login ใหม่ (SIGNED_IN)
+      if (nextUserId === currentUserId && event !== 'SIGNED_IN') {
+        return;
+      }
+
+      currentUserId = nextUserId;
       handleAuthChange(session, event === 'SIGNED_IN');
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  async function handleAuthChange(session, shouldCheckDiscord = false) {
-    setSession(session);
-    setUser(session?.user ?? null);
+  async function handleAuthChange(newSession, shouldCheckDiscord = false) {
+    setSession(newSession);
+    setUser(newSession?.user ?? null);
 
-    if (session?.user) {
-      await syncAndFetchProfile(session, shouldCheckDiscord);
+    if (newSession?.user) {
+      await syncAndFetchProfile(newSession, shouldCheckDiscord);
     } else {
       setIsAdmin(false);
       setLoading(false);
