@@ -91,14 +91,20 @@ export default function Home() {
         <div className="flex flex-wrap justify-center gap-6">
             {authLoading ? (
                <div className="px-10 py-4 bg-zinc-900 rounded-2xl animate-pulse w-40"></div>
-            ) : isAdmin && (
-              <Link href="/admin" className="px-10 py-4 bg-theme text-white font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase text-sm flex items-center gap-2" style={{ boxShadow: `0 10px 30px ${settings.theme_color}44` }}>
+            ) : isAdmin ? (
+              <Link href="/admin" className="px-10 py-4 bg-theme text-white font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase text-sm flex items-center gap-2" style={{ backgroundColor: settings.theme_color, boxShadow: `0 10px 30px ${settings.theme_color}44` }}>
                 <span>🛡️</span> Control Panel
               </Link>
+            ) : !user && (
+              <button 
+                onClick={loginWithDiscord}
+                className="px-10 py-4 bg-theme text-white font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase text-sm flex items-center gap-2" 
+                style={{ backgroundColor: settings.theme_color, boxShadow: `0 10px 30px ${settings.theme_color}44` }}
+              >
+                <span>🚀</span> Get Started
+              </button>
             )}
-            <Link href="/user" className="px-10 py-4 bg-white text-black font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase text-sm flex items-center gap-2 group">
-              <span>👥</span> Personnel Directory
-            </Link>
+            
             <Link href="/suggestions" className="px-10 py-4 bg-zinc-900 border border-zinc-800 text-white font-black rounded-2xl hover:border-theme hover:text-theme transition-all shadow-xl uppercase text-sm flex items-center gap-2 group">
               <span>📮</span> Digital Box 
               <span className="text-zinc-600 group-hover:text-theme transition-colors ml-1">→</span>
