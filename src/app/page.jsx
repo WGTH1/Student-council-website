@@ -7,6 +7,7 @@ import { supabase } from '@/libs/supabase';
 export const departments = [
   { id: 'advisors', name: 'คณะที่ปรึกษา', icon: '👨‍🏫', description: 'ครูที่ปรึกษาและผู้ให้คำแนะนำ' },
   { id: 'admin', name: 'ฝ่ายบริหาร (สภา)', icon: '👑', description: 'ประธาน และรองประธาน' },
+  { id: 'secretary', name: 'ฝ่ายเลขานุการ', icon: '📝', description: 'จัดการงานเอกสารและธุรการ' },
   { id: 'academic', name: 'ฝ่ายวิชาการ', icon: '📚', description: 'จัดการด้านการเรียนและวิชาการ' },
   { id: 'pr', name: 'ฝ่ายประชาสัมพันธ์', icon: '📢', description: 'สื่อสารข้อมูลข่าวสารสู่ภายนอก' },
   { id: 'building', name: 'ฝ่ายอาคารและสถานที่', icon: '🏢', description: 'ดูแลความเรียบร้อยของสถานที่' },

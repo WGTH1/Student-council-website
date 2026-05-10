@@ -11,75 +11,82 @@ export function AuthProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // REPLACE THIS with your Discord Server ID (Guild ID)
-  const TARGET_GUILD_ID = '1503008352383533066';
+  // ⚠️ แก้ไข ID เซิร์ฟเวอร์ของคุณที่นี่ (Discord Server ID / Guild ID)
+  const TARGET_GUILD_ID = '1503008352383533066'; 
 
   useEffect(() => {
-    // 1. Get initial session
+    // 1. ตรวจสอบ Session เริ่มต้น
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session) checkAdminStatus(session);
-      else setLoading(false);
+      handleAuthChange(session);
     });
 
-    // 2. Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session) checkAdminStatus(session);
-      else {
-        setIsAdmin(false);
-        setLoading(false);
-      }
+    // 2. ฟังการเปลี่ยนแปลงการ Login/Logout
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth Event:', event);
+      handleAuthChange(session, event === 'SIGNED_IN');
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  async function checkAdminStatus(session) {
-    if (!session?.provider_token) {
-      setLoading(false);
-      return;
-    }
+  async function handleAuthChange(session, isNewSignIn = false) {
+    setSession(session);
+    setUser(session?.user ?? null);
 
-    // NEW: Check if we already verified admin status in this session to avoid 429 errors
-    const cachedAdminStatus = sessionStorage.getItem(`fp_admin_${session.user.id}`);
-    if (cachedAdminStatus !== null) {
-      setIsAdmin(cachedAdminStatus === 'true');
+    if (session?.user) {
+      // ดึงข้อมูล Admin จากฐานข้อมูล (Profiles Table)
+      await syncAndFetchProfile(session, isNewSignIn);
+    } else {
+      setIsAdmin(false);
       setLoading(false);
-      return;
     }
+  }
 
+  async function syncAndFetchProfile(session, checkDiscord = false) {
     try {
-      // Fetch user's guilds from Discord API
-      console.log('Verifying Discord membership...');
-      const response = await fetch('https://discord.com/api/users/@me/guilds', {
-        headers: {
-          Authorization: `Bearer ${session.provider_token}`,
-        },
-      });
+      const user = session.user;
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          console.warn('Discord Rate Limit hit. Retrying with cache or defaulting to user.');
-          setLoading(false);
-          return;
+      // 1. ดึงโปรไฟล์ปัจจุบันจาก DB ก่อน
+      let { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      // 2. ถ้าเป็น SIGNED_IN ใหม่ หรือยังไม่เป็น Admin ให้ลองเช็ค Discord ดูอีกรอบ
+      if ((checkDiscord || !profile?.is_admin) && session.provider_token) {
+        console.log('Verifying Discord membership for auto-admin...');
+        
+        const response = await fetch('https://discord.com/api/users/@me/guilds', {
+          headers: { Authorization: `Bearer ${session.provider_token}` }
+        });
+
+        if (response.ok) {
+          const guilds = await response.json();
+          const isInServer = guilds.some(g => g.id === TARGET_GUILD_ID);
+
+          if (isInServer) {
+            console.log('Server Member Confirmed! Updating Admin Status...');
+            // อัปเดตลงฐานข้อมูลให้ถาวร
+            const { data: updatedProfile } = await supabase
+              .from('profiles')
+              .upsert({ 
+                id: user.id, 
+                is_admin: true,
+                full_name: user.user_metadata.full_name,
+                avatar_url: user.user_metadata.avatar_url
+              })
+              .select()
+              .single();
+            
+            profile = updatedProfile;
+          }
         }
-        const errorBody = await response.json().catch(() => ({}));
-        throw new Error(`Discord API Error: ${response.status}`);
       }
 
-      const guilds = await response.json();
-      const isInServer = guilds.some(guild => guild.id === TARGET_GUILD_ID);
-
-      // NEW: Cache the result
-      setIsAdmin(isInServer);
-      sessionStorage.setItem(`fp_admin_${session.user.id}`, isInServer ? 'true' : 'false');
-
+      setIsAdmin(profile?.is_admin || false);
     } catch (err) {
-      console.error('Admin Check Failure:', err.message);
-      setIsAdmin(false);
+      console.error('Profile Sync Error:', err);
     } finally {
       setLoading(false);
     }
@@ -89,7 +96,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {
-        scopes: 'identify guilds',
+        scopes: 'identify guilds email', // ต้องมี guilds เพื่อเช็คเซิร์ฟเวอร์
         redirectTo: window.location.origin
       }
     });
@@ -98,6 +105,7 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     await supabase.auth.signOut();
+    setIsAdmin(false);
     window.location.href = '/';
   };
 

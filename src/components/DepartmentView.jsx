@@ -1,6 +1,6 @@
 'use client';
 
-// VERSION: 1.1.0 - DYNAMIC BRANDING SUPPORT
+// VERSION: 1.1.1 - ADDED SECRETARY POSITION
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/libs/supabase';
@@ -9,6 +9,7 @@ import { useTheme } from '@/components/ThemeProvider';
 const departmentMap = {
   advisors: { name: 'คณะที่ปรึกษา', icon: '👨‍🏫' },
   admin: { name: 'ฝ่ายบริหาร (สภา)', icon: '👑' },
+  secretary: { name: 'ฝ่ายเลขานุการ', icon: '📝' },
   academic: { name: 'ฝ่ายวิชาการ', icon: '📚' },
   pr: { name: 'ฝ่ายประชาสัมพันธ์', icon: '📢' },
   building: { name: 'ฝ่ายอาคารและสถานที่', icon: '🏢' },
@@ -153,6 +154,7 @@ export default function DepartmentView({ id, isAdmin }) {
     if (member.role.includes('ครูที่ปรึกษา')) setSelectedRoleType('ครูที่ปรึกษา');
     else if (member.role.includes('ประธาน') || member.role.includes('หัวหน้า')) setSelectedRoleType('ประธาน');
     else if (member.role.includes('รอง')) setSelectedRoleType('รองประธาน');
+    else if (member.role.includes('เลขานุการ')) setSelectedRoleType('เลขานุการ');
     else setSelectedRoleType('สมาชิก');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -258,7 +260,7 @@ export default function DepartmentView({ id, isAdmin }) {
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-zinc-600 ml-1 uppercase tracking-[0.2em]">Select Position</label>
                   <div className="flex gap-2 p-1 bg-black border border-zinc-800 rounded-2xl h-[66px]">
-                    {['ครูที่ปรึกษา', 'ประธาน', 'รองประธาน', 'สมาชิก'].map((role) => (
+                    {['ครูที่ปรึกษา', 'ประธาน', 'รองประธาน', 'เลขานุการ', 'สมาชิก'].map((role) => (
                       <button
                         key={role}
                         type="button"

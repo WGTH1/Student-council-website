@@ -9,6 +9,7 @@ import { useTheme } from '@/components/ThemeProvider';
 export const departments = [
   { id: 'advisors', name: 'คณะที่ปรึกษา', icon: '👨‍🏫', description: 'ครูที่ปรึกษาและผู้ให้คำแนะนำ' },
   { id: 'admin', name: 'ฝ่ายบริหาร (สภา)', icon: '👑', description: 'ประธาน และรองประธาน' },
+  { id: 'secretary', name: 'ฝ่ายเลขานุการ', icon: '📝', description: 'จัดการงานเอกสารและธุรการ' },
   { id: 'academic', name: 'ฝ่ายวิชาการ', icon: '📚', description: 'จัดการด้านการเรียนและวิชาการ' },
   { id: 'pr', name: 'ฝ่ายประชาสัมพันธ์', icon: '📢', description: 'สื่อสารข้อมูลข่าวสารสู่ภายนอก' },
   { id: 'building', name: 'ฝ่ายอาคารและสถานที่', icon: '🏢', description: 'ดูแลความเรียบร้อยของสถานที่' },
@@ -63,8 +64,8 @@ export default function AdminPage() {
       <div className="max-w-6xl mx-auto p-8 py-16">
         <header className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div>
-            <h2 className="text-4xl font-black text-white mb-4 uppercase italic">จัดการฝ่ายต่างๆ</h2>
-            <p className="text-zinc-500 font-medium">เลือกฝ่ายที่ต้องการ เพิ่ม/ลบ/แก้ไข ข้อมูลสมาชิกสภานักเรียน</p>
+            <h2 className="text-4xl font-black text-white mb-4 uppercase italic">Personnel Directory</h2>
+            <p className="text-zinc-500 font-medium">จัดการข้อมูลสมาชิกสภาแยกตามฝ่ายต่างๆ</p>
           </div>
           <div className="flex flex-wrap gap-4">
             <Link 
@@ -105,7 +106,7 @@ export default function AdminPage() {
               <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-300 origin-left">
                 {dept.icon}
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-theme transition-colors">
+              <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-theme transition-colors uppercase italic tracking-tight">
                 {dept.name}
               </h3>
               <p className="text-zinc-500 leading-relaxed text-sm">
