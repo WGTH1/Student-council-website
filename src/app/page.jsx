@@ -25,7 +25,14 @@ export default function Home() {
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const { settings, loading: themeLoading } = useTheme();
-  const { user, isAdmin, loginWithDiscord, logout, loading: authLoading } = useAuth();
+  const { user, isAdmin, loginWithDiscord, loginWithEmail, logout, loading: authLoading } = useAuth();
+
+  // State สำหรับระบบ Login ด้วย Password
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
     async function fetchNews() {
@@ -41,8 +48,90 @@ export default function Home() {
     fetchNews();
   }, []);
 
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setLoginError('');
+    try {
+      await loginWithEmail(email, password);
+      setShowLoginModal(false);
+    } catch (err) {
+      setLoginError('Invalid email or password');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* LOGIN MODAL */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-10 relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 left-0 w-full h-1 bg-theme" style={{ backgroundColor: settings.theme_color }}></div>
+            <button 
+              onClick={() => setShowLoginModal(false)}
+              className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h2 className="text-3xl font-black uppercase italic italic tracking-tighter mb-2">Admin Login</h2>
+            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-10">กรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
+
+            <form onSubmit={handleEmailLogin} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Email Address</label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="admin@futureplus.com"
+                  className="w-full p-4 bg-black border border-zinc-800 rounded-2xl focus:border-theme outline-none transition-all"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Password</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="••••••••"
+                  className="w-full p-4 bg-black border border-zinc-800 rounded-2xl focus:border-theme outline-none transition-all"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              {loginError && (
+                <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest text-center">{loginError}</p>
+              )}
+
+              <button 
+                type="submit"
+                disabled={isLoggingIn}
+                className="w-full py-4 bg-theme text-white font-black rounded-2xl hover:opacity-90 transition-all uppercase text-xs tracking-[0.2em] shadow-lg disabled:opacity-50"
+                style={{ backgroundColor: settings.theme_color, boxShadow: `0 10px 30px ${settings.theme_color}44` }}
+              >
+                {isLoggingIn ? 'Logging in...' : 'Sign In'}
+              </button>
+            </form>
+
+            <div className="mt-8 pt-8 border-t border-zinc-800 text-center">
+              <p className="text-zinc-600 text-[9px] font-bold uppercase tracking-widest mb-4">Or use social login</p>
+              <button 
+                onClick={() => { loginWithDiscord(); setShowLoginModal(false); }}
+                className="w-full py-4 bg-[#5865F2] text-white font-black rounded-2xl hover:opacity-90 transition-all uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-2"
+              >
+                <span>🎮</span> Login with Discord
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. HERO SECTION */}
       <section className="relative h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden">
         {/* Profile / Login Status */}
@@ -50,10 +139,16 @@ export default function Home() {
           {user ? (
             <>
               <div className="flex items-center gap-4 bg-zinc-900/50 backdrop-blur-xl p-2 pr-6 rounded-full border border-zinc-800">
-                <img src={user.user_metadata.avatar_url} className="w-10 h-10 rounded-full border border-theme" />
+                {user.user_metadata?.avatar_url ? (
+                  <img src={user.user_metadata.avatar_url} className="w-10 h-10 rounded-full border border-theme" style={{ borderColor: settings.theme_color }} />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 font-black text-xs">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest leading-none">Logged in as</p>
-                  <p className="text-xs font-bold text-white uppercase">{user.user_metadata.full_name}</p>
+                  <p className="text-xs font-bold text-white uppercase">{user.user_metadata?.full_name || user.email?.split('@')[0]}</p>
                 </div>
               </div>
               <button 
@@ -67,12 +162,14 @@ export default function Home() {
               </button>
             </>
           ) : (
-            <button 
-              onClick={loginWithDiscord}
-              className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] font-black uppercase tracking-widest hover:text-theme transition-all"
-            >
-              Sign In with Discord
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setShowLoginModal(true)}
+                className="px-6 py-2 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] font-black uppercase tracking-widest hover:text-theme transition-all"
+              >
+                Staff Login
+              </button>
+            </div>
           )}
         </div>
 
@@ -108,13 +205,13 @@ export default function Home() {
               </Link>
             ) : !user && (
               <button 
-                onClick={loginWithDiscord}
+                onClick={() => setShowLoginModal(true)}
                 className="px-10 py-4 bg-theme text-white font-black rounded-2xl hover:scale-105 transition-all shadow-xl uppercase text-sm flex items-center gap-2" 
                 style={{ backgroundColor: settings.theme_color, boxShadow: `0 10px 30px ${settings.theme_color}44` }}
               >
                 <span>🚀</span> Get Started
               </button>
-            )}
+            )      }
             
             <Link href="/suggestions" className="px-10 py-4 bg-zinc-900 border border-zinc-800 text-white font-black rounded-2xl hover:border-theme hover:text-theme transition-all shadow-xl uppercase text-sm flex items-center gap-2 group">
               <span>📮</span> Digital Box 

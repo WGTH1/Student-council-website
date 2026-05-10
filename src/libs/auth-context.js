@@ -139,6 +139,14 @@ export function AuthProvider({ children }) {
     if (error) alert('Login Error: ' + error.message);
   };
 
+  const loginWithEmail = async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
@@ -146,7 +154,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, loginWithDiscord, logout }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, loading, loginWithDiscord, loginWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );
